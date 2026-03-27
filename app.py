@@ -21,7 +21,7 @@ from flask import (
 
 from models import db, Request, Setting, Usage, Admin
 from utils.scraper import scrape_amazon
-from utils.ai import generate_ad_copy
+from utils.ai import generate_ad_copy, generate_email_copy
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "kdp-adcopy-secret-2024")
@@ -263,6 +263,146 @@ def export_zip():
 
     zip_buf.seek(0)
     return send_file(zip_buf, mimetype="application/zip", as_attachment=True, download_name="ad_copy.zip")
+
+
+# ─── Email AdCopy Routes ─────────────────────────────────────────────────────
+
+@app.route("/generate/email", methods=["POST"])
+def generate_email():
+    ip = get_client_ip()
+
+    if not check_usage_limit(ip):
+        limit = get_setting("daily_limit", "10")
+        return jsonify({"error": f"Daily limit of {limit} requests reached. Try again tomorrow."}), 429
+
+    data = request.get_json(force=True)
+
+    url = (data.get("url") or "").strip()
+    title = (data.get("title") or "").strip()
+    description = (data.get("description") or "").strip()
+    keywords = (data.get("keywords") or "").strip()
+    target_audience = (data.get("target_audience") or "").strip()
+    email_type = data.get("email_type", "Promotional")
+    tone = data.get("tone", "Professional")
+    min_words = int(data.get("min_words", 50))
+    max_words = int(data.get("max_words", 150))
+
+    scraped_data = {}
+    product_image = ""
+
+    if url:
+        include_reviews = get_setting("enable_reviews", "false") == "true"
+        scraped, err = scrape_amazon(url, include_reviews=include_reviews)
+        if not err:
+            scraped_data = scraped
+            product_image = scraped.get("image", "")
+
+    final_title = title or scraped_data.get("title", "")
+    final_description = description or scraped_data.get("description", "")
+    reviews = scraped_data.get("reviews", [])
+
+    if not final_title and not final_description:
+        return jsonify({"error": "Please provide a product title or description."}), 400
+
+    api_key = get_setting("groq_api_key", "")
+    if not api_key:
+        return jsonify({"error": "Groq API key not configured. Please contact the admin."}), 400
+
+    try:
+        result = generate_email_copy(
+            api_key=api_key,
+            title=final_title,
+            description=final_description,
+            keywords=keywords,
+            target_audience=target_audience,
+            email_type=email_type,
+            tone=tone,
+            min_words=min_words,
+            max_words=max_words,
+            product_url=url,
+            product_image=product_image,
+            reviews=reviews,
+        )
+    except Exception as e:
+        return jsonify({"error": f"AI generation failed: {str(e)}"}), 500
+
+    new_req = Request(url=url or "manual", result=json.dumps(result))
+    db.session.add(new_req)
+    db.session.commit()
+    increment_usage(ip)
+
+    return jsonify(result)
+
+
+def build_email_html_export(result_data):
+    """Build a standalone HTML string from email ad copy result."""
+    product = result_data.get("product", {})
+    subject_lines = result_data.get("subject_lines", [])
+    preview_texts = result_data.get("preview_texts", [])
+    short_bodies = result_data.get("short_bodies", [])
+    long_bodies = result_data.get("long_bodies", [])
+    ctas = result_data.get("ctas", [])
+
+    items_html = lambda items: "".join(
+        f'<p class="item">{i}</p>' for i in items
+    )
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Email Ad Copy – {product.get('title','')}</title>
+<style>
+  body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #222; }}
+  h1 {{ color: #6c5ce7; }} h2 {{ color: #333; border-bottom: 2px solid #6c5ce7; padding-bottom: 6px; }}
+  .item {{ background: #f9f9f9; border-left: 4px solid #6c5ce7; padding: 12px 16px; margin: 8px 0; border-radius: 4px; }}
+  .product-img {{ max-width: 200px; border-radius: 8px; margin-bottom: 16px; }}
+  .cta {{ display: inline-block; background: #6c5ce7; color: #fff; padding: 4px 10px; border-radius: 20px; margin: 4px; font-size: 0.85em; }}
+</style>
+</head>
+<body>
+<h1>Email Ad Copy</h1>
+{"<img class='product-img' src='" + product.get('image','') + "' alt='Product'>" if product.get('image') else ""}
+<h2>{product.get('title','')}</h2>
+{"<p><a href='" + product.get('url','') + "'>View on Amazon</a></p>" if product.get('url') else ""}
+<h2>Subject Lines</h2>{items_html(subject_lines)}
+<h2>Preview Texts</h2>{items_html(preview_texts)}
+<h2>Short Email Bodies</h2>{items_html(short_bodies)}
+<h2>Long Email Bodies</h2>{items_html(long_bodies)}
+<h2>CTAs</h2><div>{"".join(f"<span class='cta'>{c}</span>" for c in ctas)}</div>
+</body></html>"""
+    return html
+
+
+@app.route("/export/email/html", methods=["POST"])
+def export_email_html():
+    data = request.get_json(force=True)
+    html = build_email_html_export(data)
+    buf = io.BytesIO(html.encode("utf-8"))
+    buf.seek(0)
+    return send_file(buf, mimetype="text/html", as_attachment=True, download_name="email_ad_copy.html")
+
+
+@app.route("/export/email/zip", methods=["POST"])
+def export_email_zip():
+    data = request.get_json(force=True)
+    html = build_email_html_export(data)
+
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("email_ad_copy.html", html)
+        image_url = (data.get("product") or {}).get("image", "")
+        if image_url:
+            try:
+                img_resp = req_lib.get(image_url, timeout=8)
+                if img_resp.status_code == 200:
+                    ext = image_url.split(".")[-1].split("?")[0] or "jpg"
+                    zf.writestr(f"product_image.{ext}", img_resp.content)
+            except Exception:
+                pass
+
+    zip_buf.seek(0)
+    return send_file(zip_buf, mimetype="application/zip", as_attachment=True, download_name="email_ad_copy.zip")
 
 
 # ─── Admin Routes ────────────────────────────────────────────────────────────

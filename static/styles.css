@@ -206,6 +206,46 @@ nav { display: flex; gap: 8px; }
   margin-left: 6px;
 }
 
+/* ── Tabs ──────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0;
+}
+.tab-btn {
+  padding: 10px 22px;
+  border: none;
+  background: none;
+  font-size: .98rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 6px 6px 0 0;
+  transition: color .2s, border-color .2s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-content { display: block; }
+.tab-content.hidden { display: none !important; }
+
+/* ── Email-specific styles ─────────────────────────────────── */
+.btn-email { background: #6c5ce7; }
+.btn-email:hover { background: #4e3dc7; }
+
+.btn-export-email {
+  border-color: #6c5ce7;
+  color: #6c5ce7;
+}
+.btn-export-email:hover { background: #6c5ce7; color: #fff; }
+
+.preview-item { border-left-color: #00b894; }
+.email-long-list .ad-item { border-left-color: #6c5ce7; }
+.email-cta-tag { background: #6c5ce7; }
+
 /* ── Footer ────────────────────────────────────────────────── */
 .footer {
   text-align: center;
