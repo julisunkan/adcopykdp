@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KDP AdCopy Generator</title>
   <link rel="manifest" href="/static/manifest.json" />
-  <meta name="theme-color" content="#e47911" />
+  <meta name="theme-color" content="#ff4757" />
   <link rel="icon" href="/static/icons/icon-192.png" />
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
@@ -14,18 +14,29 @@
     <div class="header-inner">
       <div class="logo">📚 KDP AdCopy</div>
       <nav>
-        <a href="/admin" class="btn-nav">Admin</a>
+        <a href="/admin" class="btn-nav">⚙️ Admin</a>
       </nav>
     </div>
   </header>
 
   <main class="main">
+
+    <!-- Hero -->
     <section class="hero">
-      <h1>Generate High-Converting <span class="accent">Amazon KDP</span> Ad Copy</h1>
-      <p class="hero-sub">Powered by Groq AI — paste your product URL or fill in details manually.</p>
+      <h1>
+        Generate <span class="accent-red">High-Converting</span><br>
+        <span class="accent-pink">Amazon KDP</span> <span class="accent-grn">Ad Copy</span>
+      </h1>
+      <p class="hero-sub">Powered by Groq AI — paste your product URL or fill in details to get started.</p>
+      <div class="hero-pills">
+        <span class="hero-pill pill-red">📣 Ad Copy</span>
+        <span class="hero-pill pill-green">✉️ Email AdCopy</span>
+        <span class="hero-pill pill-pink">🎣 Hooks &amp; Headlines</span>
+        <span class="hero-pill pill-yellow">📦 Export HTML &amp; ZIP</span>
+      </div>
     </section>
 
-    <!-- Tab Switcher -->
+    <!-- Tabs -->
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="ads">📣 Ad Copy</button>
       <button class="tab-btn" data-tab="email">✉️ Email AdCopy</button>
@@ -36,10 +47,10 @@
     <!-- ══════════════════════════════════════════════════════ -->
     <div id="tab-ads" class="tab-content active">
       <section class="card form-card">
-        <h2>Product Details</h2>
+        <h2>🛒 Product Details</h2>
         <form id="generateForm">
           <div class="form-group">
-            <label for="url">Amazon Product URL <span class="optional">(optional)</span></label>
+            <label for="url">Amazon Product URL <span class="optional">(optional — auto-fills fields below)</span></label>
             <input type="url" id="url" name="url" placeholder="https://amazon.com/dp/..." />
           </div>
           <div class="form-row">
@@ -54,7 +65,7 @@
           </div>
           <div class="form-group">
             <label for="description">Description</label>
-            <textarea id="description" name="description" rows="3" placeholder="Briefly describe the book..."></textarea>
+            <textarea id="description" name="description" rows="3" placeholder="Briefly describe the book or product..."></textarea>
           </div>
           <div class="form-group">
             <label for="keywords">Keywords <span class="optional">(comma-separated)</span></label>
@@ -80,17 +91,17 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="min_words">Min Words (short ads)</label>
+              <label for="min_words">Min Words <span class="optional">(short ads)</span></label>
               <input type="number" id="min_words" name="min_words" value="30" min="10" max="500" />
             </div>
             <div class="form-group">
-              <label for="max_words">Max Words (short ads)</label>
+              <label for="max_words">Max Words <span class="optional">(short ads)</span></label>
               <input type="number" id="max_words" name="max_words" value="100" min="20" max="1000" />
             </div>
           </div>
           <button type="submit" class="btn-primary" id="generateBtn">
             <span id="btnText">✨ Generate Ad Copy</span>
-            <span id="btnLoading" class="hidden">⏳ Generating...</span>
+            <span id="btnLoading" class="hidden">⏳ Generating…</span>
           </button>
         </form>
       </section>
@@ -98,30 +109,37 @@
       <div id="errorBanner" class="error-banner hidden"></div>
 
       <section id="results" class="hidden">
+        <!-- Product info full-width -->
         <div class="card product-card" id="productInfo"></div>
+
+        <!-- Export bar -->
         <div class="export-bar">
           <button class="btn-export" id="exportHtml">⬇ Export HTML</button>
           <button class="btn-export" id="exportZip">📦 Export ZIP</button>
         </div>
-        <div class="card">
-          <h2>📢 Headlines</h2>
-          <div id="headlines" class="items-list"></div>
-        </div>
-        <div class="card">
-          <h2>🎣 Hooks</h2>
-          <div id="hooks" class="items-list"></div>
-        </div>
-        <div class="card">
-          <h2>⚡ Short Ads</h2>
-          <div id="shortAds" class="items-list"></div>
-        </div>
-        <div class="card">
-          <h2>📝 Long Ads</h2>
-          <div id="longAds" class="items-list long-ads-list"></div>
-        </div>
-        <div class="card">
-          <h2>🔑 Keywords</h2>
-          <div id="keywords" class="keywords-cloud"></div>
+
+        <!-- Results in 2-col grid -->
+        <div class="results-grid">
+          <div class="card section-red">
+            <h2>📢 Headlines</h2>
+            <div id="headlines" class="items-list"></div>
+          </div>
+          <div class="card section-pink">
+            <h2>🎣 Hooks</h2>
+            <div id="hooks" class="items-list"></div>
+          </div>
+          <div class="card section-yellow">
+            <h2>⚡ Short Ads</h2>
+            <div id="shortAds" class="items-list"></div>
+          </div>
+          <div class="card section-green">
+            <h2>🔑 Keywords</h2>
+            <div id="keywords" class="keywords-cloud"></div>
+          </div>
+          <div class="card section-pink results-full">
+            <h2>📝 Long Ads</h2>
+            <div id="longAds" class="items-list"></div>
+          </div>
         </div>
       </section>
     </div>
@@ -129,9 +147,9 @@
     <!-- ══════════════════════════════════════════════════════ -->
     <!-- EMAIL ADCOPY TAB                                       -->
     <!-- ══════════════════════════════════════════════════════ -->
-    <div id="tab-email" class="tab-content hidden">
-      <section class="card form-card">
-        <h2>Email Details</h2>
+    <div id="tab-email" class="tab-content hidden email-tab">
+      <section class="card form-card email-form-card">
+        <h2>✉️ Email Details</h2>
         <form id="emailForm">
           <div class="form-group">
             <label for="e_url">Amazon Product URL <span class="optional">(optional)</span></label>
@@ -149,7 +167,7 @@
           </div>
           <div class="form-group">
             <label for="e_description">Description</label>
-            <textarea id="e_description" name="description" rows="3" placeholder="Briefly describe the book..."></textarea>
+            <textarea id="e_description" name="description" rows="3" placeholder="Briefly describe the book or product..."></textarea>
           </div>
           <div class="form-group">
             <label for="e_keywords">Keywords <span class="optional">(comma-separated)</span></label>
@@ -177,17 +195,17 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="e_min_words">Min Words (short body)</label>
+              <label for="e_min_words">Min Words <span class="optional">(short body)</span></label>
               <input type="number" id="e_min_words" name="min_words" value="50" min="20" max="500" />
             </div>
             <div class="form-group">
-              <label for="e_max_words">Max Words (short body)</label>
+              <label for="e_max_words">Max Words <span class="optional">(short body)</span></label>
               <input type="number" id="e_max_words" name="max_words" value="150" min="50" max="1000" />
             </div>
           </div>
           <button type="submit" class="btn-primary btn-email" id="emailBtn">
             <span id="emailBtnText">✉️ Generate Email Copy</span>
-            <span id="emailBtnLoading" class="hidden">⏳ Generating...</span>
+            <span id="emailBtnLoading" class="hidden">⏳ Generating…</span>
           </button>
         </form>
       </section>
@@ -196,36 +214,41 @@
 
       <section id="emailResults" class="hidden">
         <div class="card product-card" id="emailProductInfo"></div>
+
         <div class="export-bar">
           <button class="btn-export btn-export-email" id="exportEmailHtml">⬇ Export HTML</button>
           <button class="btn-export btn-export-email" id="exportEmailZip">📦 Export ZIP</button>
         </div>
-        <div class="card">
-          <h2>📧 Subject Lines</h2>
-          <div id="subjectLines" class="items-list"></div>
-        </div>
-        <div class="card">
-          <h2>👁 Preview Texts</h2>
-          <div id="previewTexts" class="items-list preview-list"></div>
-        </div>
-        <div class="card">
-          <h2>📝 Short Email Bodies</h2>
-          <div id="shortBodies" class="items-list"></div>
-        </div>
-        <div class="card">
-          <h2>📜 Long Email Bodies</h2>
-          <div id="longBodies" class="items-list long-ads-list email-long-list"></div>
-        </div>
-        <div class="card">
-          <h2>🚀 Calls to Action</h2>
-          <div id="ctas" class="keywords-cloud"></div>
+
+        <div class="results-grid">
+          <div class="card section-green results-full">
+            <h2>📧 Subject Lines</h2>
+            <div id="subjectLines" class="items-list"></div>
+          </div>
+          <div class="card section-yellow">
+            <h2>👁 Preview Texts</h2>
+            <div id="previewTexts" class="items-list"></div>
+          </div>
+          <div class="card section-pink">
+            <h2>🚀 Calls to Action</h2>
+            <div id="ctas" class="keywords-cloud"></div>
+          </div>
+          <div class="card section-red">
+            <h2>📝 Short Email Bodies</h2>
+            <div id="shortBodies" class="items-list"></div>
+          </div>
+          <div class="card section-green results-full">
+            <h2>📜 Long Email Bodies</h2>
+            <div id="longBodies" class="items-list"></div>
+          </div>
         </div>
       </section>
     </div>
+
   </main>
 
   <footer class="footer">
-    <p>KDP AdCopy Generator &mdash; Powered by Groq AI</p>
+    <p><strong>KDP AdCopy Generator</strong> &mdash; Powered by Groq AI &mdash; Generate, Export &amp; Convert</p>
   </footer>
 
   <script src="/static/app.js"></script>

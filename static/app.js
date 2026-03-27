@@ -155,8 +155,8 @@ if (adForm) {
 function renderAdResults(data) {
   renderProductCard("productInfo", data.product || {});
   renderList("headlines", data.headlines || []);
-  renderList("hooks", data.hooks || []);
-  renderList("shortAds", data.short_ads || []);
+  renderList("hooks", data.hooks || [], "pink-item");
+  renderList("shortAds", data.short_ads || [], "yellow-item");
   renderList("longAds", data.long_ads || [], "long-item");
 
   const kwEl = document.getElementById("keywords");
@@ -219,8 +219,8 @@ if (emailForm) {
 
 function renderEmailResults(data) {
   renderProductCard("emailProductInfo", data.product || {});
-  renderList("subjectLines", data.subject_lines || []);
-  renderList("previewTexts", data.preview_texts || [], "preview-item");
+  renderList("subjectLines", data.subject_lines || [], "green-item");
+  renderList("previewTexts", data.preview_texts || [], "yellow-item");
   renderList("shortBodies", data.short_bodies || []);
   renderList("longBodies", data.long_bodies || [], "long-item");
 
