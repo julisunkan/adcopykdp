@@ -9,6 +9,18 @@ A full-stack web application for generating high-converting Amazon KDP ad copy u
 - **Scraping**: requests + BeautifulSoup4
 - **Frontend**: Vanilla HTML/CSS/JS (no frameworks)
 
+## Social Media Autoposting
+- **Connect & Autopost bar** on main page — OAuth popup flow for all 4 platforms
+- **Twitter/X**: OAuth 1.0a via requests-oauthlib; posts tweets (280 char limit enforced)
+- **Reddit**: OAuth 2.0; posts text submissions with subreddit + title fields
+- **Facebook**: OAuth 2.0 Graph API; posts to user's feed
+- **Pinterest**: OAuth 2.0 v5 API; creates pins with board selection (boards auto-loaded)
+- **Post Modal**: platform picker, quick-select generated copy, Reddit/Pinterest extra fields, char counter for Twitter, error handling, loading state
+- **Admin settings**: 8 social credential fields (API key/secret per platform), redirect URIs shown per-platform
+- **SocialToken DB model**: tokens stored per session ID; connect/disconnect endpoints per platform
+- Tokens stored in `SocialToken` table keyed by Flask `session["sid"]`
+- OAuth callbacks return postMessage to opener window then self-close
+
 ## Features
 - Amazon product URL scraper (title, description, bullets, image, reviews)
 - AI ad copy generation: headlines, hooks, short ads, long ads, keywords

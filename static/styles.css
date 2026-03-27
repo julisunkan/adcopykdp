@@ -496,6 +496,175 @@ nav { display: flex; gap: 8px; }
   border-radius: 50px; font-weight: 800; vertical-align: middle; margin-left: 8px;
 }
 
+/* ── Social Connect Bar ────────────────────────────────────── */
+.social-bar {
+  border-top: 4px solid var(--green);
+  margin-bottom: 28px;
+  padding: 20px 24px;
+}
+.social-bar-title {
+  font-size: 1rem; font-weight: 800; margin-bottom: 14px;
+  color: var(--grn-dk);
+}
+.social-platforms {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+@media (max-width: 640px) {
+  .social-platforms { grid-template-columns: repeat(2, 1fr); }
+}
+.soc-platform {
+  display: flex; align-items: center; gap: 6px;
+}
+.soc-btn {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-size: .88rem; font-weight: 700;
+  cursor: pointer;
+  transition: all .25s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.soc-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+.soc-logo { font-size: 1.1rem; flex-shrink: 0; }
+
+.soc-twitter  { border-color: #000; }
+.soc-twitter:hover, .soc-twitter.connected  { background: #000; color: #fff; border-color: #000; }
+.soc-reddit   { border-color: #ff4500; }
+.soc-reddit:hover, .soc-reddit.connected   { background: #ff4500; color: #fff; border-color: #ff4500; }
+.soc-facebook { border-color: #1877f2; }
+.soc-facebook:hover, .soc-facebook.connected { background: #1877f2; color: #fff; border-color: #1877f2; }
+.soc-pinterest{ border-color: #e60023; }
+.soc-pinterest:hover, .soc-pinterest.connected{ background: #e60023; color: #fff; border-color: #e60023; }
+
+.soc-btn.connected { opacity: 1; }
+.soc-disconnect {
+  padding: 8px 10px; border-radius: 8px; border: 2px solid #ffc2c7;
+  background: none; color: var(--red); font-size: .8rem; font-weight: 700;
+  cursor: pointer; transition: all .2s; flex-shrink: 0;
+}
+.soc-disconnect:hover { background: var(--red); color: #fff; border-color: var(--red); }
+.social-hint { font-size: .82rem; color: var(--muted); margin-top: 4px; }
+
+/* Share button in export bar */
+.btn-share {
+  padding: 10px 20px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, var(--green), var(--yellow));
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: .9rem;
+  transition: transform .2s, box-shadow .2s;
+}
+.btn-share:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,201,122,.35); }
+
+/* ── Post Modal ─────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(26,21,53,.55);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn .2s ease;
+}
+.modal-box {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 32px 28px;
+  width: 540px; max-width: 96vw; max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(0,0,0,.25);
+  position: relative;
+  animation: fadeSlideUp .3s ease;
+}
+.modal-close {
+  position: absolute; top: 16px; right: 18px;
+  background: var(--bg); border: 2px solid var(--border);
+  border-radius: 50%; width: 34px; height: 34px;
+  font-size: 1rem; cursor: pointer; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+}
+.modal-close:hover { background: var(--red); color: #fff; border-color: var(--red); }
+.modal-box h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 6px; }
+.modal-platform-icon { font-size: 2rem; margin-bottom: 16px; }
+
+/* Quick pick buttons */
+.modal-quickpick {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+}
+.qp-btn {
+  padding: 5px 12px; border-radius: 50px; font-size: .78rem; font-weight: 700;
+  border: 2px solid var(--border); background: none; cursor: pointer;
+  transition: all .2s; color: var(--muted); text-align: left;
+  max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.qp-btn:hover { border-color: var(--pink); color: var(--pnk-dk); background: #fff5fb; }
+.qp-btn.selected { border-color: var(--green); color: var(--grn-dk); background: #e8fff4; }
+
+/* Admin social styles */
+.admin-social-card { border-top: 4px solid var(--green); }
+.admin-social-card h2 { color: var(--grn-dk); }
+.admin-social-note {
+  font-size: .88rem; color: var(--muted); margin-bottom: 20px;
+  background: var(--bg); border-radius: 8px; padding: 12px 14px;
+  border-left: 3px solid var(--green);
+}
+.admin-social-note code { background: #e8fff4; color: var(--grn-dk); padding: 1px 5px; border-radius: 4px; font-size: .85em; }
+.social-cred-block {
+  border: 2px solid var(--border); border-radius: 12px; padding: 18px 20px;
+  margin-bottom: 16px; transition: border-color .2s;
+}
+.twitter-block:hover   { border-color: #000; }
+.reddit-block:hover    { border-color: #ff4500; }
+.facebook-block:hover  { border-color: #1877f2; }
+.pinterest-block:hover { border-color: #e60023; }
+.social-cred-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.social-cred-header strong { font-size: 1rem; font-weight: 800; }
+.soc-icon { font-size: 1.3rem; }
+.cred-link {
+  margin-left: auto; font-size: .82rem; color: var(--muted);
+  text-decoration: none; font-weight: 600;
+  padding: 4px 10px; border: 1px solid var(--border); border-radius: 50px;
+  transition: all .2s;
+}
+.cred-link:hover { color: var(--text); border-color: var(--text); }
+.cred-hint { font-size: .8rem; color: var(--muted); margin-top: 8px; }
+.cred-hint code { background: var(--bg); padding: 2px 6px; border-radius: 4px; }
+
+/* ── Toast Notifications ────────────────────────────────────── */
+.toast-notification {
+  position: fixed; bottom: 28px; right: 24px; z-index: 9999;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 14px 22px;
+  font-size: .9rem; font-weight: 700;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  border-left: 5px solid var(--green);
+  transform: translateY(20px); opacity: 0;
+  transition: all .35s cubic-bezier(.4,0,.2,1);
+  max-width: 340px;
+}
+.toast-notification.visible { transform: translateY(0); opacity: 1; }
+.toast-success { border-left-color: var(--green); }
+.toast-error   { border-left-color: var(--red); }
+.toast-info    { border-left-color: var(--blue, #4dabf7); }
+
+/* ── Error Banner ───────────────────────────────────────────── */
+.error-banner {
+  background: #fff0f2; border: 1.5px solid var(--red);
+  color: #c0392b; border-radius: 8px; padding: 10px 14px;
+  font-size: .88rem; font-weight: 600; margin-bottom: 12px;
+}
+
 /* ── Footer ────────────────────────────────────────────────── */
 .footer {
   text-align: center;

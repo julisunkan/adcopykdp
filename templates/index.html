@@ -36,6 +36,95 @@
       </div>
     </section>
 
+    <!-- Social Connect Bar -->
+    <section class="social-bar card">
+      <div class="social-bar-title">🔗 Connect &amp; Autopost</div>
+      <div class="social-platforms">
+        <!-- Twitter -->
+        <div class="soc-platform" id="soc-twitter">
+          <button class="soc-btn soc-twitter" onclick="socialConnect('twitter')">
+            <span class="soc-logo">𝕏</span>
+            <span class="soc-label" id="soc-twitter-label">Connect X</span>
+          </button>
+          <button class="soc-disconnect hidden" id="soc-twitter-disc" onclick="socialDisconnect('twitter')">✕</button>
+        </div>
+        <!-- Reddit -->
+        <div class="soc-platform" id="soc-reddit">
+          <button class="soc-btn soc-reddit" onclick="socialConnect('reddit')">
+            <span class="soc-logo">🟠</span>
+            <span class="soc-label" id="soc-reddit-label">Connect Reddit</span>
+          </button>
+          <button class="soc-disconnect hidden" id="soc-reddit-disc" onclick="socialDisconnect('reddit')">✕</button>
+        </div>
+        <!-- Facebook -->
+        <div class="soc-platform" id="soc-facebook">
+          <button class="soc-btn soc-facebook" onclick="socialConnect('facebook')">
+            <span class="soc-logo">🔵</span>
+            <span class="soc-label" id="soc-facebook-label">Connect Facebook</span>
+          </button>
+          <button class="soc-disconnect hidden" id="soc-facebook-disc" onclick="socialDisconnect('facebook')">✕</button>
+        </div>
+        <!-- Pinterest -->
+        <div class="soc-platform" id="soc-pinterest">
+          <button class="soc-btn soc-pinterest" onclick="socialConnect('pinterest')">
+            <span class="soc-logo">📌</span>
+            <span class="soc-label" id="soc-pinterest-label">Connect Pinterest</span>
+          </button>
+          <button class="soc-disconnect hidden" id="soc-pinterest-disc" onclick="socialDisconnect('pinterest')">✕</button>
+        </div>
+      </div>
+      <p class="social-hint">Connect your accounts once — then post any generated copy with one click.</p>
+    </section>
+
+    <!-- Post Modal -->
+    <div id="postModal" class="modal-overlay hidden" onclick="closePostModal(event)">
+      <div class="modal-box">
+        <button class="modal-close" onclick="closePostModal(null)">✕</button>
+        <h3 id="modalTitle">Post to Platform</h3>
+        <div id="modalPlatformIcon" class="modal-platform-icon"></div>
+
+        <!-- Reddit extra fields -->
+        <div id="redditFields" class="hidden">
+          <div class="form-group">
+            <label>Subreddit <span class="optional">(without r/)</span></label>
+            <input type="text" id="redditSubreddit" placeholder="e.g. selfpublishing" />
+          </div>
+          <div class="form-group">
+            <label>Post Title</label>
+            <input type="text" id="redditTitle" placeholder="Catchy title for your Reddit post" />
+          </div>
+        </div>
+
+        <!-- Pinterest extra fields -->
+        <div id="pinterestFields" class="hidden">
+          <div class="form-group">
+            <label>Board</label>
+            <select id="pinterestBoard">
+              <option value="">Loading boards…</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Pin Title</label>
+            <input type="text" id="pinterestTitle" placeholder="Pin title" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Content to post <span id="charCounter" class="optional"></span></label>
+          <textarea id="modalText" rows="5" placeholder="Select content below or type here…" oninput="updateCharCounter()"></textarea>
+        </div>
+
+        <!-- Quick-select buttons -->
+        <div id="modalQuickPick" class="modal-quickpick"></div>
+
+        <div id="modalError" class="error-banner hidden"></div>
+        <button class="btn-primary" id="modalPostBtn" onclick="submitPost()">
+          <span id="modalPostText">🚀 Post Now</span>
+          <span id="modalPostLoading" class="hidden">⏳ Posting…</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Tabs -->
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="ads">📣 Ad Copy</button>
@@ -116,6 +205,7 @@
         <div class="export-bar">
           <button class="btn-export" id="exportHtml">⬇ Export HTML</button>
           <button class="btn-export" id="exportZip">📦 Export ZIP</button>
+          <button class="btn-share" onclick="openPostModal('ads')">🚀 Post to Social</button>
         </div>
 
         <!-- Results in 2-col grid -->
@@ -218,6 +308,7 @@
         <div class="export-bar">
           <button class="btn-export btn-export-email" id="exportEmailHtml">⬇ Export HTML</button>
           <button class="btn-export btn-export-email" id="exportEmailZip">📦 Export ZIP</button>
+          <button class="btn-share" onclick="openPostModal('emails')">🚀 Post to Social</button>
         </div>
 
         <div class="results-grid">

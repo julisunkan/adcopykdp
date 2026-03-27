@@ -9,3 +9,4 @@ lxml
 beautifulsoup4
 lxml
 requests
+requests-oauthlib

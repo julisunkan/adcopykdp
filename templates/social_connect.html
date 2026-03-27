@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Connecting…</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:40px;background:#f8f6ff">
+  <h2 style="color:#ff4757">Connecting your account…</h2>
+  <p>This window will close automatically.</p>
+  <script>
+    // This page is used as an intermediate after OAuth redirects
+    // It sends a message to the opener and closes
+    const params = new URLSearchParams(window.location.search);
+    const platform = params.get('platform') || 'unknown';
+    const error = params.get('error');
+    if (window.opener) {
+      if (error) {
+        window.opener.postMessage({ social: platform, error }, '*');
+      } else {
+        window.opener.postMessage({ social: platform, ok: true }, '*');
+      }
+      window.close();
+    }
+  </script>
+</body>
+</html>

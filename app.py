@@ -19,9 +19,10 @@ from flask import (
     flash,
 )
 
-from models import db, Request, Setting, Usage, Admin
+from models import db, Request, Setting, Usage, Admin, SocialToken
 from utils.scraper import scrape_amazon
 from utils.ai import generate_ad_copy, generate_email_copy
+from utils import social as soc
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "kdp-adcopy-secret-2024")
@@ -96,6 +97,14 @@ def init_db():
             "daily_limit": "10",
             "enable_reviews": "false",
             "prompt_template": "",
+            "twitter_api_key": "",
+            "twitter_api_secret": "",
+            "reddit_client_id": "",
+            "reddit_client_secret": "",
+            "facebook_app_id": "",
+            "facebook_app_secret": "",
+            "pinterest_app_id": "",
+            "pinterest_app_secret": "",
         }
         for k, v in defaults.items():
             if not Setting.query.get(k):
@@ -405,6 +414,310 @@ def export_email_zip():
     return send_file(zip_buf, mimetype="application/zip", as_attachment=True, download_name="email_ad_copy.zip")
 
 
+# ─── Social Media Routes ─────────────────────────────────────────────────────
+
+def get_session_id():
+    """Return a stable session key, creating one if needed."""
+    if "sid" not in session:
+        import uuid
+        session["sid"] = str(uuid.uuid4())
+    return session["sid"]
+
+
+def get_social_token(platform):
+    """Fetch stored social token for the current session."""
+    sid = session.get("sid")
+    if not sid:
+        return None
+    return SocialToken.query.filter_by(session_id=sid, platform=platform).first()
+
+
+def save_social_token(platform, access_token, username, access_token_secret=""):
+    sid = get_session_id()
+    tok = SocialToken.query.filter_by(session_id=sid, platform=platform).first()
+    if tok:
+        tok.access_token = access_token
+        tok.access_token_secret = access_token_secret
+        tok.username = username
+    else:
+        tok = SocialToken(
+            session_id=sid, platform=platform,
+            access_token=access_token,
+            access_token_secret=access_token_secret,
+            username=username,
+        )
+        db.session.add(tok)
+    db.session.commit()
+
+
+def get_callback_url(platform):
+    base = request.host_url.rstrip("/")
+    return f"{base}/social/callback/{platform}"
+
+
+@app.route("/social/status")
+def social_status():
+    """Return JSON of which platforms are connected."""
+    sid = session.get("sid")
+    result = {}
+    for p in ["twitter", "reddit", "facebook", "pinterest"]:
+        tok = SocialToken.query.filter_by(session_id=sid, platform=p).first() if sid else None
+        result[p] = {"connected": bool(tok), "username": tok.username if tok else None}
+    return jsonify(result)
+
+
+# ── Twitter ──────────────────────────────────────────────────────────────────
+
+@app.route("/social/connect/twitter")
+def social_connect_twitter():
+    api_key = get_setting("twitter_api_key")
+    api_secret = get_setting("twitter_api_secret")
+    if not api_key or not api_secret:
+        return jsonify({"error": "Twitter API credentials not configured in Admin."}), 400
+    try:
+        callback = get_callback_url("twitter")
+        auth_url, req_token, req_token_secret = soc.twitter_get_request_token(api_key, api_secret, callback)
+        session["tw_req_token"] = req_token
+        session["tw_req_token_secret"] = req_token_secret
+        return redirect(auth_url)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/social/callback/twitter")
+def social_callback_twitter():
+    api_key = get_setting("twitter_api_key")
+    api_secret = get_setting("twitter_api_secret")
+    oauth_token = request.args.get("oauth_token")
+    verifier = request.args.get("oauth_verifier")
+    req_token_secret = session.get("tw_req_token_secret", "")
+    try:
+        access_token, access_token_secret, screen_name = soc.twitter_get_access_token(
+            api_key, api_secret, oauth_token, req_token_secret, verifier
+        )
+        save_social_token("twitter", access_token, f"@{screen_name}", access_token_secret)
+    except Exception as e:
+        return f"<script>window.opener&&window.opener.postMessage({{social:'twitter',error:'{e}'}},'*');window.close();</script>"
+    return "<script>window.opener&&window.opener.postMessage({social:'twitter',ok:true},'*');window.close();</script>"
+
+
+@app.route("/social/disconnect/twitter")
+def social_disconnect_twitter():
+    sid = session.get("sid")
+    if sid:
+        SocialToken.query.filter_by(session_id=sid, platform="twitter").delete()
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/social/post/twitter", methods=["POST"])
+def social_post_twitter():
+    tok = get_social_token("twitter")
+    if not tok:
+        return jsonify({"error": "Twitter not connected."}), 401
+    data = request.get_json(force=True)
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "No text provided."}), 400
+    api_key = get_setting("twitter_api_key")
+    api_secret = get_setting("twitter_api_secret")
+    try:
+        result = soc.twitter_post(api_key, api_secret, tok.access_token, tok.access_token_secret, text)
+        return jsonify({"ok": True, "data": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Reddit ───────────────────────────────────────────────────────────────────
+
+@app.route("/social/connect/reddit")
+def social_connect_reddit():
+    client_id = get_setting("reddit_client_id")
+    if not client_id:
+        return jsonify({"error": "Reddit credentials not configured in Admin."}), 400
+    import secrets
+    state = secrets.token_hex(16)
+    session["reddit_state"] = state
+    callback = get_callback_url("reddit")
+    return redirect(soc.reddit_auth_url(client_id, callback, state))
+
+
+@app.route("/social/callback/reddit")
+def social_callback_reddit():
+    state = request.args.get("state")
+    code = request.args.get("code")
+    error = request.args.get("error")
+    if error or state != session.get("reddit_state"):
+        return "<script>window.opener&&window.opener.postMessage({social:'reddit',error:'Auth failed or denied'},'*');window.close();</script>"
+    client_id = get_setting("reddit_client_id")
+    client_secret = get_setting("reddit_client_secret")
+    callback = get_callback_url("reddit")
+    try:
+        access_token, username = soc.reddit_get_access_token(client_id, client_secret, code, callback)
+        save_social_token("reddit", access_token, f"u/{username}")
+    except Exception as e:
+        return f"<script>window.opener&&window.opener.postMessage({{social:'reddit',error:'{e}'}},'*');window.close();</script>"
+    return "<script>window.opener&&window.opener.postMessage({social:'reddit',ok:true},'*');window.close();</script>"
+
+
+@app.route("/social/disconnect/reddit")
+def social_disconnect_reddit():
+    sid = session.get("sid")
+    if sid:
+        SocialToken.query.filter_by(session_id=sid, platform="reddit").delete()
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/social/post/reddit", methods=["POST"])
+def social_post_reddit():
+    tok = get_social_token("reddit")
+    if not tok:
+        return jsonify({"error": "Reddit not connected."}), 401
+    data = request.get_json(force=True)
+    subreddit = (data.get("subreddit") or "").strip().lstrip("r/")
+    title = (data.get("title") or "").strip()
+    text = (data.get("text") or "").strip()
+    if not subreddit or not title:
+        return jsonify({"error": "Subreddit and title are required."}), 400
+    try:
+        url = soc.reddit_post(tok.access_token, subreddit, title, text)
+        return jsonify({"ok": True, "url": url})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Facebook ─────────────────────────────────────────────────────────────────
+
+@app.route("/social/connect/facebook")
+def social_connect_facebook():
+    app_id = get_setting("facebook_app_id")
+    if not app_id:
+        return jsonify({"error": "Facebook credentials not configured in Admin."}), 400
+    callback = get_callback_url("facebook")
+    return redirect(soc.facebook_auth_url(app_id, callback))
+
+
+@app.route("/social/callback/facebook")
+def social_callback_facebook():
+    code = request.args.get("code")
+    error = request.args.get("error")
+    if error or not code:
+        return "<script>window.opener&&window.opener.postMessage({social:'facebook',error:'Auth failed or denied'},'*');window.close();</script>"
+    app_id = get_setting("facebook_app_id")
+    app_secret = get_setting("facebook_app_secret")
+    callback = get_callback_url("facebook")
+    try:
+        access_token, name = soc.facebook_get_access_token(app_id, app_secret, code, callback)
+        save_social_token("facebook", access_token, name)
+    except Exception as e:
+        return f"<script>window.opener&&window.opener.postMessage({{social:'facebook',error:'{e}'}},'*');window.close();</script>"
+    return "<script>window.opener&&window.opener.postMessage({social:'facebook',ok:true},'*');window.close();</script>"
+
+
+@app.route("/social/disconnect/facebook")
+def social_disconnect_facebook():
+    sid = session.get("sid")
+    if sid:
+        SocialToken.query.filter_by(session_id=sid, platform="facebook").delete()
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/social/post/facebook", methods=["POST"])
+def social_post_facebook():
+    tok = get_social_token("facebook")
+    if not tok:
+        return jsonify({"error": "Facebook not connected."}), 401
+    data = request.get_json(force=True)
+    message = (data.get("text") or "").strip()
+    link = (data.get("link") or "").strip()
+    if not message:
+        return jsonify({"error": "No message provided."}), 400
+    try:
+        post_id = soc.facebook_post(tok.access_token, message, link)
+        return jsonify({"ok": True, "post_id": post_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Pinterest ─────────────────────────────────────────────────────────────────
+
+@app.route("/social/connect/pinterest")
+def social_connect_pinterest():
+    app_id = get_setting("pinterest_app_id")
+    if not app_id:
+        return jsonify({"error": "Pinterest credentials not configured in Admin."}), 400
+    callback = get_callback_url("pinterest")
+    return redirect(soc.pinterest_auth_url(app_id, callback))
+
+
+@app.route("/social/callback/pinterest")
+def social_callback_pinterest():
+    code = request.args.get("code")
+    error = request.args.get("error")
+    if error or not code:
+        return "<script>window.opener&&window.opener.postMessage({social:'pinterest',error:'Auth failed or denied'},'*');window.close();</script>"
+    app_id = get_setting("pinterest_app_id")
+    app_secret = get_setting("pinterest_app_secret")
+    callback = get_callback_url("pinterest")
+    try:
+        access_token, username = soc.pinterest_get_access_token(app_id, app_secret, code, callback)
+        save_social_token("pinterest", access_token, f"@{username}")
+        # Store boards too
+        boards = soc.pinterest_get_boards(access_token)
+        import json
+        session["pinterest_boards"] = boards
+    except Exception as e:
+        return f"<script>window.opener&&window.opener.postMessage({{social:'pinterest',error:'{e}'}},'*');window.close();</script>"
+    return "<script>window.opener&&window.opener.postMessage({social:'pinterest',ok:true},'*');window.close();</script>"
+
+
+@app.route("/social/disconnect/pinterest")
+def social_disconnect_pinterest():
+    sid = session.get("sid")
+    if sid:
+        SocialToken.query.filter_by(session_id=sid, platform="pinterest").delete()
+        db.session.commit()
+    session.pop("pinterest_boards", None)
+    return jsonify({"ok": True})
+
+
+@app.route("/social/pinterest/boards")
+def social_pinterest_boards():
+    tok = get_social_token("pinterest")
+    if not tok:
+        return jsonify({"boards": []})
+    boards = session.get("pinterest_boards") or []
+    if not boards:
+        try:
+            boards = soc.pinterest_get_boards(tok.access_token)
+            session["pinterest_boards"] = boards
+        except Exception:
+            pass
+    return jsonify({"boards": boards})
+
+
+@app.route("/social/post/pinterest", methods=["POST"])
+def social_post_pinterest():
+    tok = get_social_token("pinterest")
+    if not tok:
+        return jsonify({"error": "Pinterest not connected."}), 401
+    data = request.get_json(force=True)
+    board_id = (data.get("board_id") or "").strip()
+    title = (data.get("title") or "").strip()
+    description = (data.get("text") or "").strip()
+    link = (data.get("link") or "").strip()
+    image_url = (data.get("image") or "").strip()
+    if not board_id:
+        return jsonify({"error": "Please select a board."}), 400
+    try:
+        pin_id = soc.pinterest_post(tok.access_token, board_id, title, description, link, image_url)
+        return jsonify({"ok": True, "pin_id": pin_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ─── Admin Routes ────────────────────────────────────────────────────────────
 
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -435,6 +748,14 @@ def admin_dashboard():
         set_setting("daily_limit", request.form.get("daily_limit", "10"))
         set_setting("enable_reviews", "true" if request.form.get("enable_reviews") else "false")
         set_setting("prompt_template", request.form.get("prompt_template", ""))
+        # Social credentials
+        for key in ["twitter_api_key", "twitter_api_secret",
+                    "reddit_client_id", "reddit_client_secret",
+                    "facebook_app_id", "facebook_app_secret",
+                    "pinterest_app_id", "pinterest_app_secret"]:
+            val = request.form.get(key, "")
+            if val:  # only overwrite if provided (don't clear with empty)
+                set_setting(key, val)
         flash("Settings saved.", "success")
 
     settings = {
