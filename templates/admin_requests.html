@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Requests – KDP AdCopy Admin</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="admin-body-full">
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">📚 KDP AdCopy <span class="badge">Admin</span></div>
+      <nav>
+        <a href="/admin" class="btn-nav">← Dashboard</a>
+        <a href="/admin/logout" class="btn-nav btn-danger">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="card">
+      <h2>Recent Requests (last 100)</h2>
+      {% if requests %}
+      <div class="table-wrapper">
+        <table class="req-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product Title</th>
+              <th>URL</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in requests %}
+            <tr>
+              <td>{{ r.id }}</td>
+              <td>{{ r.title }}</td>
+              <td>
+                {% if r.url and r.url != 'manual' %}
+                  <a href="{{ r.url }}" target="_blank" rel="noopener">Link</a>
+                {% else %}
+                  manual
+                {% endif %}
+              </td>
+              <td>{{ r.created_at }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="empty-msg">No requests yet.</p>
+      {% endif %}
+    </div>
+  </main>
+</body>
+</html>

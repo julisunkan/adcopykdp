@@ -1,0 +1,11 @@
+flask
+flask-sqlalchemy
+gunicorn
+groq
+pillow
+requests
+beautifulsoup4
+lxml
+beautifulsoup4
+lxml
+requests

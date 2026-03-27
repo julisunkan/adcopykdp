@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard – KDP AdCopy</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="admin-body-full">
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">📚 KDP AdCopy <span class="badge">Admin</span></div>
+      <nav>
+        <a href="/admin/requests" class="btn-nav">Requests</a>
+        <a href="/" class="btn-nav">← App</a>
+        <a href="/admin/logout" class="btn-nav btn-danger">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+        <div class="flash flash-{{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num">{{ total_requests }}</div>
+        <div class="stat-label">Total Requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">{{ today_requests }}</div>
+        <div class="stat-label">Today's Requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">{{ settings.daily_limit }}</div>
+        <div class="stat-label">Daily Limit / IP</div>
+      </div>
+    </div>
+
+    <!-- Settings Form -->
+    <div class="card">
+      <h2>Settings</h2>
+      <form method="POST" action="/admin">
+        <div class="form-group">
+          <label>Groq API Key</label>
+          <input type="password" name="groq_api_key" value="{{ settings.groq_api_key }}" placeholder="gsk_..." />
+        </div>
+        <div class="form-group">
+          <label>Daily Request Limit (per IP)</label>
+          <input type="number" name="daily_limit" value="{{ settings.daily_limit }}" min="1" max="1000" />
+        </div>
+        <div class="form-group checkbox-group">
+          <label>
+            <input type="checkbox" name="enable_reviews" {% if settings.enable_reviews == 'true' %}checked{% endif %} />
+            Enable Review Scraping
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Custom Prompt Template <span class="optional">(leave blank for default)</span></label>
+          <textarea name="prompt_template" rows="10" placeholder="Use {title}, {description}, {bullets}, {keywords}, {target_audience}, {platform}, {tone}, {min_words}, {max_words}, {long_max}, {product_url}, {review_text} as placeholders.">{{ settings.prompt_template }}</textarea>
+        </div>
+        <button type="submit" class="btn-primary">Save Settings</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

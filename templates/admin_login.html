@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login – KDP AdCopy</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="admin-body">
+  <div class="login-card">
+    <div class="login-logo">📚 KDP AdCopy</div>
+    <h2>Admin Login</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+        <div class="flash flash-{{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="POST" action="/admin/login">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" required autofocus />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" required />
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%">Login</button>
+    </form>
+    <p class="login-hint">Default: admin / admin</p>
+  </div>
+</body>
+</html>

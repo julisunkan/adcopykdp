@@ -1,0 +1,131 @@
+Build a full-stack web application using Python Flask and SQLite.
+PROJECT NAME: KDP AdCopy Generator (PWA)
+CORE FUNCTIONALITY:
+The app allows users to generate high-converting ad copy for Amazon KDP products using Groq AI.
+FEATURES:
+1.	USER INPUT (NO LOGIN REQUIRED)
+•	Input Amazon product URL (optional)
+•	Input Product Title (optional)
+•	Input Description (optional)
+•	Input Keywords (optional)
+•	Input Target Audience (optional)
+•	Select platform (Amazon, Facebook, Instagram)
+•	Select tone (Emotional, Professional, Urgent)
+•	Select minimum and maximum word count
+2.	SCRAPING
+•	Scrape Amazon product page using requests + BeautifulSoup
+•	Extract:
+o	Title
+o	Description
+o	Bullet points
+o	Product image (from #landingImage)
+•	If user provides manual inputs, they override scraped data
+3.	REVIEW SCRAPING (optional toggle via admin)
+•	Extract review snippets if available
+•	Use them for AI prompt enrichment
+4.	AI GENERATION (Groq API)
+•	Use Groq Python SDK
+•	Model: llama3-70b-8192
+•	Prompt must:
+o	Generate structured JSON
+o	Include:
+{
+"product": {
+"title": "",
+"image": "",
+"url": ""
+},
+"headlines": [],
+"hooks": [],
+"short_ads": [],
+"long_ads": [],
+"keywords": []
+}
+o	Respect word limits:
+	Short ads: between min_words and max_words
+	Long ads: between max_words and 2x max_words
+o	Use emotional triggers, benefits, and strong hooks
+5.	DATABASE (SQLite)
+Create tables:
+•	requests (id, url, result, created_at)
+•	settings (key, value)
+•	usage (ip, date, count)
+•	admin (username, password)
+6.	USAGE LIMIT (NO LOGIN)
+•	Limit requests per IP per day
+•	Value controlled via admin panel
+7.	ADMIN PANEL (/admin)
+•	Login required (session-based)
+•	Manage:
+o	Groq API key
+o	Daily usage limit
+o	Enable/disable review scraping
+o	Prompt template
+•	View all user requests
+•	Simple dashboard UI
+8.	FRONTEND
+•	Use HTML + CSS + Vanilla JS
+•	Clean UI with sections:
+o	Product (image + link)
+o	Headlines
+o	Hooks
+o	Short Ads
+o	Long Ads
+•	Each section displayed clearly (not raw JSON)
+9.	EXPORT FEATURES
+•	Export generated AdCopy as:
+a) HTML file
+b) ZIP file containing:
+o	HTML file
+o	Product image (downloaded locally)
+•	Backend should generate files dynamically
+10.	PWA SUPPORT
+•	Add manifest.json
+•	Add service-worker.js
+•	Enable offline caching of static files
+•	Make app installable
+11.	API ROUTES
+•	/generate (POST)
+•	/export/html (POST)
+•	/export/zip (POST)
+•	/admin (GET/POST)
+•	/admin/login
+•	/admin/logout
+•	/admin/requests
+12.	SECURITY
+•	Use session for admin login
+•	Store settings in database (not env only)
+•	Validate inputs
+13.	PROJECT STRUCTURE
+•	app.py
+•	models.py
+•	utils/
+o	scraper.py
+o	ai.py
+•	templates/
+o	index.html
+o	admin_login.html
+o	admin_dashboard.html
+o	admin_requests.html
+•	static/
+o	app.js
+o	styles.css
+o	manifest.json
+o	service-worker.js
+14.	OUTPUT REQUIREMENTS
+•	Fully working Flask app
+•	Clean, readable, modular code
+•	Comments explaining key parts
+•	Ready to run with:
+pip install -r requirements.txt
+python app.py
+OPTIONAL (if time permits):
+•	Word count validation post-processing
+•	Copy-to-clipboard buttons
+•	Loading indicator
+IMPORTANT:
+•	Do NOT use React or heavy frameworks
+•	Keep it lightweight and fast
+•	Ensure JSON parsing from AI is handled safely
+•	Ensure ZIP export works correctly
+END OF INSTRUCTIONS
